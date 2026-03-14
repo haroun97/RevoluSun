@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 140 14% 97%;
+    --foreground: 220 26% 14%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 26% 14%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 26% 14%;
+
+    --primary: 172 40% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 168 40% 85%;
+    --secondary-foreground: 172 40% 25%;
+
+    --muted: 150 10% 94%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 40 87% 61%;
+    --accent-foreground: 30 60% 18%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 160 10% 90%;
+    --input: 160 10% 88%;
+    --ring: 172 40% 40%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Custom tokens */
+    --teal: 172 40% 40%;
+    --teal-light: 172 35% 50%;
+    --mint: 168 50% 78%;
+    --solar: 40 87% 61%;
+    --solar-warm: 35 90% 55%;
+    --cream: 140 14% 97%;
+    --charcoal: 220 26% 14%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(172 40% 40% / 0.08), hsl(168 50% 78% / 0.15), hsl(40 87% 61% / 0.05));
+    --gradient-card-teal: linear-gradient(135deg, hsl(172 40% 40% / 0.06), hsl(168 50% 78% / 0.1));
+    --gradient-card-solar: linear-gradient(135deg, hsl(40 87% 61% / 0.08), hsl(35 90% 55% / 0.04));
+
+    --shadow-card: 0 1px 3px hsl(220 26% 14% / 0.04), 0 4px 12px hsl(220 26% 14% / 0.03);
+    --shadow-card-hover: 0 4px 16px hsl(220 26% 14% / 0.08), 0 8px 24px hsl(220 26% 14% / 0.04);
+    --shadow-section: 0 1px 2px hsl(220 26% 14% / 0.03);
+
+    --font-display: 'DM Sans', system-ui, sans-serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer components {
+  .glass-nav {
+    @apply bg-background/80 backdrop-blur-xl border-b border-border/50;
+  }
+
+  .chart-container {
+    @apply bg-card rounded-2xl p-6 border border-border/60;
+    box-shadow: var(--shadow-card);
+  }
+
+  .chart-container:hover {
+    box-shadow: var(--shadow-card-hover);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .gradient-card-teal {
+    background: var(--gradient-card-teal);
+  }
+
+  .gradient-card-solar {
+    background: var(--gradient-card-solar);
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    @apply text-2xl font-bold text-foreground tracking-tight;
+  }
+
+  .section-subtitle {
+    @apply text-muted-foreground text-sm leading-relaxed max-w-2xl;
+  }
+}
+
+/* Custom Recharts tooltip styling */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  @apply !rounded-xl !border-border/60 !shadow-lg;
+  background: hsl(var(--card)) !important;
+  font-family: var(--font-body) !important;
+}

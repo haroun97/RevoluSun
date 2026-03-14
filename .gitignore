@@ -1,0 +1,24 @@
+# GitHub token - never commit
+.env
+.github-token
+
+# Dependencies
+node_modules/
+
+# Python
+backend/.venv/
+backend/venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# Backend env (secrets)
+backend/.env
+
+# Build / cache
+dist/
+.cache/
+*.log
+.DS_Store
+
