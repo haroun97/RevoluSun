@@ -10,6 +10,7 @@ interface Props {
 const views: { value: TenantComparisonView; label: string }[] = [
   { value: 'total', label: 'Total (kWh)' },
   { value: 'average', label: 'Avg Daily' },
+  { value: 'weekly', label: 'Avg Weekly' },
   { value: 'activeDays', label: 'Active Days' },
 ];
 
@@ -17,12 +18,12 @@ export function TenantComparisonChart({ tenants }: Props) {
   const [view, setView] = useState<TenantComparisonView>('total');
 
   const data = tenants.map(t => ({
-    name: `${t.unit} · ${t.name}`,
-    value: view === 'total' ? t.totalConsumption : view === 'average' ? t.avgDailyConsumption : t.activeDays,
+    name: t.name,
+    value: view === 'total' ? t.totalConsumption : view === 'average' ? t.avgDailyConsumption : view === 'weekly' ? t.avgWeeklyConsumption : t.activeDays,
     fill: t.color,
   }));
 
-  const unit = view === 'total' ? ' kWh' : view === 'average' ? ' kWh/d' : ' days';
+  const unit = view === 'total' ? ' kWh' : view === 'average' ? ' kWh/d' : view === 'weekly' ? ' kWh/w' : ' days';
 
   return (
     <ChartWrapper

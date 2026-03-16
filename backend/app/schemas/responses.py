@@ -35,6 +35,7 @@ class TenantComparisonItem(BaseModel):
     tenant_id: str
     total_consumption: float
     average_daily_consumption: float
+    average_weekly_consumption: float
     active_days: int
 
 
@@ -69,4 +70,5 @@ class QualityResponse(BaseModel):
     missing_days: int
     coverage_ranges: list[dict[str, Any]]
     consistency_checks: list[dict[str, Any]]
+    missing_tenants: list[str]
     issues: list[QualityIssueItem]

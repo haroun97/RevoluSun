@@ -1,36 +1,20 @@
-# Mock energy data
+# Energy data
 
-- **`mock_energy_data.xlsx`** – Mock Excel dataset for the RevoluSUN Energy Sharing case study and backend ingestion.
+The backend loads measurement data from a single Excel file configured via `DATA_FILE_PATH` in `backend/.env`.
 
-## Structure (matches case study PDF + backend)
+## Dataset (Nürnberg)
 
-| Sheet          | Description |
-|----------------|-------------|
-| Kunde1–Kunde6  | Tenant consumption meters (cumulative kWh). Columns: Seriennummer, Zeit, Wert. |
-| Kunde8–Kunde13 | Same (Kunde7 omitted per case study). Kunde13 includes OBIS-Code. |
-| Summenzähler   | Building total. **Wert** = raw dial reading; actual kWh = Wert × 50. Columns: Zeit, Wert. |
-| PV             | PV generation (cumulative kWh). Columns: Zeit, Wert. |
-
-- **Zeit**: timestamp (one reading per day).
-- **Wert**: cumulative meter reading (kWh for tenants and PV; raw value for Summenzähler).
-- Coverage differs by tenant (some start later or end earlier); a few days are missing for some meters.
-
-## Regenerating
-
-From the project root:
-
-```bash
-backend/.venv/bin/python scripts/generate_mock_energy_excel.py
-```
-
-Output: `data/mock_energy_data.xlsx`. Optional: pass a path as first argument.
+- **File:** `document/Messdaten_Nürnberg_2024-2026.xlsx` (anonymized measurement data from a multi-family house in Nuremberg).
+- **Sheets:** Kunde1–Kunde13 (tenant meters), Summenzähler (building total, conversion factor 50), PV-Zähler (PV generation).
+- **Columns:** `timestamp`, `value` (and optional `measuring_point__serial`, `obis_code`, `measuring_point__conversion_factor`).
+- **Date range:** 2024-08-16 to 2026-03-06.
 
 ## Using with the backend
 
 Set in `backend/.env`:
 
 ```env
-DATA_FILE_PATH=/path/to/project/data/mock_energy_data.xlsx
+DATA_FILE_PATH=../document/Messdaten_Nürnberg_2024-2026.xlsx
 ```
 
-On startup, the backend will import this file once (idempotent by filename).
+On startup, the backend imports this file once per filename (idempotent by filename).

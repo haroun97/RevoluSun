@@ -9,7 +9,8 @@ interface Props {
 export function TenantInsights({ tenants }: Props) {
   const sorted = [...tenants].sort((a, b) => b.totalConsumption - a.totalConsumption);
   const topConsumer = sorted[0];
-  const lowestAvg = [...tenants].sort((a, b) => a.avgDailyConsumption - b.avgDailyConsumption)[0];
+  const lowestAvgDaily = [...tenants].sort((a, b) => a.avgDailyConsumption - b.avgDailyConsumption)[0];
+  const lowestAvgWeekly = [...tenants].sort((a, b) => a.avgWeeklyConsumption - b.avgWeeklyConsumption)[0];
   // Most stable = lowest coefficient of variation
   const mostStable = [...tenants].sort((a, b) => {
     const cvA = getCV(a);
@@ -19,12 +20,13 @@ export function TenantInsights({ tenants }: Props) {
 
   const insights = [
     { label: 'Highest Demand', tenant: topConsumer, detail: `${topConsumer.totalConsumption} kWh total`, icon: Trophy, color: 'text-solar' },
-    { label: 'Lowest Avg Daily', tenant: lowestAvg, detail: `${lowestAvg.avgDailyConsumption} kWh/day`, icon: TrendingDown, color: 'text-primary' },
+    { label: 'Lowest Avg Daily', tenant: lowestAvgDaily, detail: `${lowestAvgDaily.avgDailyConsumption} kWh/day`, icon: TrendingDown, color: 'text-primary' },
+    { label: 'Lowest Avg Weekly', tenant: lowestAvgWeekly, detail: `${lowestAvgWeekly.avgWeeklyConsumption} kWh/week`, icon: TrendingDown, color: 'text-primary' },
     { label: 'Most Stable', tenant: mostStable, detail: 'Lowest variability', icon: Activity, color: 'text-teal-light' },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
       {insights.map((ins, idx) => (
         <motion.div
           key={ins.label}

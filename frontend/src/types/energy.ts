@@ -12,6 +12,7 @@ export interface TenantData {
   unit: string;
   totalConsumption: number;
   avgDailyConsumption: number;
+  avgWeeklyConsumption: number;
   activeDays: number;
   color: string;
   timeSeries: { date: string; consumption: number }[];
@@ -39,11 +40,22 @@ export interface DataQualityEntry {
   status: 'good' | 'warning' | 'critical';
 }
 
+export type DataQualityIssueType = 'negative_delta' | 'missing_days' | 'tenant_building_mismatch';
+
 export interface DataQualityAlert {
   id: string;
+  issueType: DataQualityIssueType;
+  meterId: string | null;
+  date: string | null;
   severity: 'info' | 'warning' | 'error';
   message: string;
   detail: string;
+}
+
+export interface QualityAlertBreakdown {
+  negativeDeltas: number;
+  missingDays: number;
+  mismatchCount: number;
 }
 
 export interface KpiData {
@@ -56,4 +68,4 @@ export interface KpiData {
 }
 
 export type Granularity = 'daily' | 'weekly' | 'monthly';
-export type TenantComparisonView = 'total' | 'average' | 'activeDays';
+export type TenantComparisonView = 'total' | 'average' | 'weekly' | 'activeDays';

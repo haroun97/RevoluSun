@@ -79,7 +79,9 @@ def classify_sheet(name: str) -> tuple[str, str | None] | None:
     name = name.strip()
     m = TENANT_SHEET_PATTERN.match(name)
     if m:
-        return ("tenant", f"Kunde{m.group(1)}")
+        # Normalize so "Kunde01" and "Kunde1" both become "Kunde1" (prevents duplicate tenant_ids)
+        num = int(m.group(1))
+        return ("tenant", f"Kunde{num}")
     if any(n in name for n in BUILDING_SHEET_NAMES):
         return ("building_total", None)
     if any(n in name for n in PV_SHEET_NAMES):

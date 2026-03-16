@@ -1,4 +1,8 @@
-"""Stage 5: Proportional PV allocation per day -> daily_energy_sharing."""
+"""Stage 5: Proportional PV allocation per day -> daily_energy_sharing.
+
+Uses only valid daily consumption rows (is_valid=True); negative deltas are excluded
+from PV and tenant demand so allocation is based on physically plausible values.
+"""
 from datetime import date
 
 import pandas as pd
@@ -9,9 +13,11 @@ from app.models import DailyEnergySharing, DailyMeterConsumption
 
 
 def run_sharing(session: Session, import_batch_id: int) -> int:
-    """Per day: tenant_demand_i, pv_total, total_tenant_demand; allocated_pv_i = min(demand_i, pv_total * demand_i/total_demand); persist. Returns count."""
+    """Per day: tenant_demand_i, pv_total, total_tenant_demand; allocated_pv_i = min(demand_i, pv_total * demand_i/total_demand); persist. Returns count.
+    Only valid (non-negative) deltas are included in PV and tenant demand."""
     stmt = select(DailyMeterConsumption).where(
-        DailyMeterConsumption.import_batch_id == import_batch_id
+        DailyMeterConsumption.import_batch_id == import_batch_id,
+        DailyMeterConsumption.is_valid.is_(True),
     )
     rows = session.scalars(stmt).all()
     if not rows:

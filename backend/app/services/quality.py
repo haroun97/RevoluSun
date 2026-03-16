@@ -65,9 +65,10 @@ def run_quality_checks(session: Session, import_batch_id: int) -> int:
             ))
             count += 1
 
-    # Tenant sum vs building total: compare building_total daily sum to sum of tenant daily sums per date
-    building = df[df["meter_type"] == "building_total"]
-    tenants = df[df["meter_type"] == "tenant"]
+    # Tenant sum vs building total: compare using only valid deltas (exclude negative deltas)
+    valid_df = df[df["is_valid"] == True]
+    building = valid_df[valid_df["meter_type"] == "building_total"]
+    tenants = valid_df[valid_df["meter_type"] == "tenant"]
     if not building.empty and not tenants.empty:
         b_daily = building.groupby("date")["delta_kwh"].sum()
         t_daily = tenants.groupby("date")["delta_kwh"].sum()

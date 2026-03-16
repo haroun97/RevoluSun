@@ -1,4 +1,13 @@
-"""Stage 3: Derive daily consumption from normalized cumulative readings."""
+"""Stage 3: Derive daily consumption from normalized cumulative readings.
+
+Negative deltas: Cumulative energy meters cannot physically decrease. A negative
+delta (current_reading - previous_reading < 0) is invalid and can be caused by meter
+reset, data corruption, unsorted timestamps, or wrong conversion factor. We do NOT
+use abs(delta) and we do NOT sum negative deltas into consumption. Invalid deltas
+are flagged as anomalies (is_valid=False, quality_flag='negative_delta') and
+excluded from the daily aggregate; anomaly info remains available for data-quality
+reports.
+"""
 from datetime import date
 
 import pandas as pd
@@ -9,7 +18,9 @@ from app.models import DailyMeterConsumption, NormalizedMeterReading
 
 
 def run_resampling(session: Session, import_batch_id: int) -> int:
-    """For each meter, sort by timestamp, compute deltas, aggregate to daily, persist. Returns count of daily rows."""
+    """For each meter, sort by meter_id and timestamp, compute deltas, aggregate only
+    valid (non-negative) deltas to daily, persist. Negative deltas are flagged but
+    excluded from aggregation. Returns count of daily rows."""
     stmt = select(NormalizedMeterReading).where(
         NormalizedMeterReading.import_batch_id == import_batch_id
     ).order_by(NormalizedMeterReading.meter_id, NormalizedMeterReading.timestamp)
@@ -34,7 +45,6 @@ def run_resampling(session: Session, import_batch_id: int) -> int:
     for (meter_id, meter_type, tenant_id), group in df.groupby(["meter_id", "meter_type", "tenant_id"], dropna=False):
         group = group.sort_values("timestamp")
         prev_cumulative = None
-        prev_date = None
         daily_deltas: dict[date, float] = {}
         daily_invalid: dict[date, bool] = {}
         daily_flag: dict[date, str | None] = {}
@@ -48,12 +58,13 @@ def run_resampling(session: Session, import_batch_id: int) -> int:
                     daily_deltas[dt] = 0.0
                     daily_invalid[dt] = False
                     daily_flag[dt] = None
-                daily_deltas[dt] += delta
-                if delta < 0:
+                if delta >= 0:
+                    daily_deltas[dt] += delta
+                else:
+                    # Do not add negative delta to consumption; flag for data-quality report
                     daily_invalid[dt] = True
                     daily_flag[dt] = "negative_delta"
             prev_cumulative = cum
-            prev_date = dt
 
         for d, delta in daily_deltas.items():
             rec = DailyMeterConsumption(

@@ -10,8 +10,8 @@ export function Footer() {
             <span className="font-display font-semibold text-foreground">RevoluSUN</span>
             <span>· Energy Sharing MVP</span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Case study dashboard · Data is simulated for demonstration purposes
+          <p className="text-xs text-muted-foreground max-w-xl">
+            Case study dashboard · Nürnberg measurement data (2024–2026). Tenants not in the dataset (e.g. Kunde7) are excluded from metrics; zero consumption is not assumed.
           </p>
         </div>
       </div>

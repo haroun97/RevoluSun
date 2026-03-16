@@ -55,26 +55,6 @@ export function EnergySharingChart({ allocations }: Props) {
           </motion.div>
         ))}
       </div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        className="bg-primary/5 rounded-2xl p-5 border border-primary/10"
-      >
-        <div className="flex items-start gap-3">
-          <Info className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-          <div>
-            <h4 className="font-display font-semibold text-foreground text-sm mb-1">Allocation Rule</h4>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              PV is allocated proportionally to each tenant's demand per period:{' '}
-              <code className="bg-primary/10 px-1.5 py-0.5 rounded text-xs font-mono text-primary">
-                PV_i = min(demand_i, PV_total × demand_i / Σdemand)
-              </code>
-            </p>
-          </div>
-        </div>
-      </motion.div>
     </div>
   );
 }

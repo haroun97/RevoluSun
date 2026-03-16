@@ -109,6 +109,20 @@ alembic upgrade head
 -   `sqlalchemy`, `alembic`, `psycopg[binary]`, `python-dotenv`
 -   Optional: `pandas`, `openpyxl`
 
+**Re-import data (Option A — full pipeline reset)**
+
+To clear existing analytics data and re-run the full import pipeline (e.g. so data reflects the latest processing logic, such as negative-delta handling):
+
+1. From the `backend/` directory, run:
+   ```bash
+   python scripts/reset_analytics_data.py
+   ```
+   This truncates all analytics tables (`raw_meter_readings`, `normalized_meter_readings`, `daily_meter_consumption`, `daily_energy_sharing`, `data_quality_issues`, `import_batches`).
+
+2. Restart the FastAPI server (stop and start `uvicorn app.main:app --reload`).
+
+On startup, the backend sees no existing import for the file named in `DATA_FILE_PATH` and runs the full pipeline again (ingestion → normalization → resampling → quality → sharing). Ensure `DATA_FILE_PATH` in `.env` points to your Excel file (e.g. `../document/Messdaten_Nürnberg_2024-2026.xlsx`) before restarting.
+
 ------------------------------------------------------------------------
 
 ## Frontend
@@ -503,9 +517,11 @@ The backend processes the dataset in explicit stages:
 
 -   sort readings by meter and timestamp
 -   compute deltas from cumulative values
--   flag negative deltas
--   aggregate to daily values
+-   flag negative deltas (anomalies); exclude them from daily totals
+-   aggregate only valid deltas to daily values
 -   persist results in `daily_meter_consumption`
+
+Negative deltas can occur due to meter resets, data corruption, or timestamp inconsistencies. Since cumulative energy meters cannot physically decrease, negative deltas are treated as anomalies. These values are flagged in the data quality checks and excluded from consumption aggregation.
 
 ### Stage 4 — Compute energy-sharing outputs
 
