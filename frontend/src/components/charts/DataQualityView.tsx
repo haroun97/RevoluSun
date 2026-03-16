@@ -88,7 +88,7 @@ export function DataQualityView({ entries, alerts, breakdown, missingTenants = [
   const showBreakdown =
     breakdown &&
     (breakdown.negativeDeltas > 0 || breakdown.missingDays > 0 || breakdown.mismatchCount > 0);
-  const showMismatchNote = breakdown && breakdown.mismatchCount > 0 && missingTenants.length > 0;
+  const showMismatchNote = false;
 
   return (
     <div className="space-y-6">
@@ -115,16 +115,7 @@ export function DataQualityView({ entries, alerts, breakdown, missingTenants = [
         </motion.div>
       )}
 
-      {showMismatchNote && (
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="text-sm text-muted-foreground"
-        >
-          Difference in tenant vs building totals may be due to missing tenants (e.g. {missingTenants[0]}).
-        </motion.p>
-      )}
+      {showMismatchNote && null}
 
       {/* Missing tenants (e.g. Kunde7) + documentation note */}
       {missingTenants.length > 0 && (

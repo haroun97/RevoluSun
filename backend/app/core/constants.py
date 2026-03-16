@@ -1,28 +1,61 @@
-"""Domain constants: expected tenant set for missing-tenant detection and sort order."""
+"""Domain constants and helpers for tenant/meter metadata."""
 
-# Case study: tenant meters are Kunde1–Kunde13; Kunde7 may be absent from the workbook.
-# Used to compute which expected tenants have no data (e.g. Kunde7).
-EXPECTED_TENANT_IDS = [
-    "Kunde1",
-    "Kunde2",
-    "Kunde3",
-    "Kunde4",
-    "Kunde5",
-    "Kunde6",
-    "Kunde7",
-    "Kunde8",
-    "Kunde9",
-    "Kunde10",
-    "Kunde11",
-    "Kunde12",
-    "Kunde13",
-]
+from __future__ import annotations
+
+import json
+from functools import lru_cache
+from pathlib import Path
+
+
+def _tenant_config_path() -> Path:
+    """Location of tenant configuration (per-dataset, outside of code).
+
+    The file is expected to be a JSON object with:
+
+      { "expected_tenants": ["Kunde1", "Kunde2", ...] }
+
+    If the file is missing or invalid, we fall back to an empty list
+    (meaning no missing-tenant detection).
+    """
+    # backend/app/core/constants.py -> backend/app/core -> backend/app -> backend
+    backend_root = Path(__file__).resolve().parents[2]
+    return backend_root.parent / "document" / "tenant_config.json"
+
+
+@lru_cache(maxsize=1)
+def expected_tenant_ids() -> list[str]:
+    """Return the configured expected tenant IDs for this dataset.
+
+    This is loaded from `document/tenant_config.json` so that the list
+    is configurable per project/dataset and not hard-coded in code.
+    """
+    path = _tenant_config_path()
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        return []
+    except json.JSONDecodeError:
+        return []
+    tenants = data.get("expected_tenants", [])
+    return [t for t in tenants if isinstance(t, str) and t.strip()]
+
+
+# Backwards-compatible alias used in tests and existing code
+EXPECTED_TENANT_IDS = expected_tenant_ids()
 
 
 def get_missing_tenant_ids(present_tenant_ids: list[str]) -> list[str]:
-    """Return expected tenant IDs that have no data (e.g. Kunde7 when sheet is absent)."""
+    """Return expected tenant IDs that have no data.
+
+    Expected tenants come from configuration (`tenant_config.json`),
+    so this works for arbitrary tenant naming schemes and datasets.
+    """
+    expected = set(expected_tenant_ids())
+    if not expected:
+        return []
     present_set = {t for t in present_tenant_ids if t}
-    return sorted(set(EXPECTED_TENANT_IDS) - present_set)
+    return sorted(expected - present_set)
 
 
 def tenant_id_sort_key(tenant_id: str | None) -> tuple[int, int]:

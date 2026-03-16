@@ -35,7 +35,15 @@ export function TenantTrendChart({ tenants }: Props) {
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(160 10% 90%)" />
           <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} stroke="hsl(220 10% 70%)" interval="preserveStartEnd" tickLine={false} />
           <YAxis tick={{ fontSize: 11 }} stroke="hsl(220 10% 70%)" tickLine={false} axisLine={false} unit=" kWh" width={60} />
-          <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid hsl(160 10% 90%)', fontSize: '13px' }} formatter={(v: number) => [`${v} kWh`]} />
+          <Tooltip
+            contentStyle={{ borderRadius: '12px', border: '1px solid hsl(160 10% 90%)', fontSize: '13px' }}
+            formatter={(value: number, name: string) => {
+              const tenantName = tenants.find((t) => t.id === name)?.name ?? name;
+              // First element is the value text, second is the label shown before the colon.
+              // This yields tooltip lines like "Kunde1: 1.23 kWh" without a leading colon.
+              return [`${value} kWh`, tenantName];
+            }}
+          />
           <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} formatter={(v) => tenants.find(t => t.id === v)?.name || v} />
           {tenants.map(t => (
             <Line key={t.id} type="monotone" dataKey={t.id} stroke={t.color} strokeWidth={1.5} dot={false} />

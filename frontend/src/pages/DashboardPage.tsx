@@ -123,6 +123,24 @@ export default function DashboardPage() {
   const qualityBreakdown = qualityData?.breakdown ?? null;
   const dataQualityMissingTenants = qualityData?.missingTenants ?? [];
 
+  // --- Derived operational KPIs for secondary row ---
+
+  // Total grid import (kWh) from tenant allocations; convert to MWh for display.
+  const totalGridImportKwh = allocations.reduce((sum, a) => sum + (a.gridImport ?? 0), 0);
+  const totalGridImportMwh = totalGridImportKwh / 1000;
+
+  // Total grid export (kWh) from surplus PV in building timeseries; convert to MWh.
+  const totalGridExportKwh = timeSeries.reduce((sum, p) => sum + (p.surplus ?? 0), 0);
+  const totalGridExportMwh = totalGridExportKwh / 1000;
+
+  // Building meter coverage %, taken from coverage table.
+  const buildingCoverageEntry = dataQualityEntries.find((e) => e.meterId === "building_total");
+  const buildingCoveragePct = buildingCoverageEntry?.coverage ?? null;
+
+  // Count of tenant-building mismatch days.
+  const mismatchCount =
+    qualityBreakdown?.mismatchCount != null ? qualityBreakdown.mismatchCount : 0;
+
   const isLoading =
     dateRangeQuery.isLoading ||
     summaryQuery.isLoading ||
@@ -140,17 +158,55 @@ export default function DashboardPage() {
 
   const dataAlertsSubtitle =
     qualityBreakdown &&
-    (qualityBreakdown.negativeDeltas > 0 || qualityBreakdown.missingDays > 0 || qualityBreakdown.mismatchCount > 0)
-      ? `${qualityBreakdown.negativeDeltas} invalid deltas · ${qualityBreakdown.missingDays} gaps · ${qualityBreakdown.mismatchCount} mismatch`
+    (qualityBreakdown.negativeDeltas > 0 ||
+      qualityBreakdown.missingDays > 0 ||
+      mismatchCount > 0)
+      ? `${qualityBreakdown.negativeDeltas} invalid deltas · ${qualityBreakdown.missingDays} gaps · ${mismatchCount} mismatch`
       : "Quality notices";
 
+  // Secondary KPI row: operational metrics only (no duplication of hero KPIs).
   const kpiCards = [
-    { title: "Building Consumption", value: `${(kpi.totalConsumption / 1000).toFixed(1)} MWh`, subtitle: "90-day total demand", icon: Zap, iconColor: "text-primary", gradient: "gradient-card-teal" },
-    { title: "PV Generation", value: `${(kpi.totalPvGeneration / 1000).toFixed(1)} MWh`, subtitle: "90-day solar output", icon: Sun, iconColor: "text-solar", gradient: "gradient-card-solar" },
-    { title: "Self-Consumption", value: `${kpi.selfConsumptionRatio}%`, subtitle: "PV used on-site", icon: BarChart3, iconColor: "text-primary", gradient: "gradient-card-teal" },
-    { title: "Surplus Ratio", value: `${kpi.surplusRatio}%`, subtitle: "PV exported to grid", icon: ArrowUpRight, iconColor: "text-solar", gradient: "gradient-card-solar" },
-    { title: "Active Tenants", value: `${kpi.activeTenants}`, subtitle: "Metered residential units", icon: Users, iconColor: "text-primary", gradient: "gradient-card-teal" },
-    { title: "Data Alerts", value: `${kpi.dataQualityAlerts}`, subtitle: dataAlertsSubtitle, icon: AlertCircle, iconColor: "text-solar", gradient: "gradient-card-solar" },
+    {
+      title: "Surplus Ratio",
+      value: `${kpi.surplusRatio}%`,
+      subtitle: "PV exported to grid",
+      icon: ArrowUpRight,
+      iconColor: "text-solar",
+      gradient: "gradient-card-solar",
+    },
+    {
+      title: "Grid Import",
+      value: totalGridImportKwh > 0 ? `${totalGridImportMwh.toFixed(1)} MWh` : "–",
+      subtitle: "Tenant demand from grid", // TODO: refine if backend exposes building-level import directly
+      icon: Zap,
+      iconColor: "text-primary",
+      gradient: "gradient-card-teal",
+    },
+    {
+      title: "Grid Export",
+      value: totalGridExportKwh > 0 ? `${totalGridExportMwh.toFixed(1)} MWh` : "–",
+      subtitle: "PV sent to grid",
+      icon: Sun,
+      iconColor: "text-solar",
+      gradient: "gradient-card-solar",
+    },
+    {
+      title: "Data Alerts",
+      value: `${kpi.dataQualityAlerts}`,
+      subtitle: dataAlertsSubtitle,
+      icon: AlertCircle,
+      iconColor: "text-solar",
+      gradient: "gradient-card-solar",
+    },
+    {
+      title: "Coverage %",
+      value:
+        buildingCoveragePct != null ? `${buildingCoveragePct.toFixed(1)}%` : "–",
+      subtitle: "Building meter data coverage",
+      icon: BarChart3,
+      iconColor: "text-primary",
+      gradient: "gradient-card-teal",
+    },
   ];
 
   if (isLoading) {
@@ -182,7 +238,7 @@ export default function DashboardPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
         <section id="overview" className="scroll-mt-20">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
             {kpiCards.map((card, idx) => (
               <KpiCard key={card.title} {...card} index={idx} />
             ))}
