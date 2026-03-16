@@ -14,6 +14,7 @@ import { TenantTrendChart } from "@/components/charts/TenantTrendChart";
 import { EnergySharingChart } from "@/components/charts/EnergySharingChart";
 import { DataQualityView } from "@/components/charts/DataQualityView";
 import { TenantInsights } from "@/components/cards/TenantInsights";
+import { GoogleDriveImportButton } from "@/components/import/GoogleDriveImportButton";
 import {
   fetchDateRange,
   fetchSummary,
@@ -254,6 +255,10 @@ export default function DashboardPage() {
           onGranularityChange={setGranularity}
           onReset={() => setDateRange(defaultDateRange)}
         />
+
+        <section className="flex flex-wrap items-center gap-4">
+          <GoogleDriveImportButton />
+        </section>
 
         <section>
           <SectionHeader id="core-charts" title="Energy Overview" subtitle="Building electricity demand and photovoltaic generation over the analysis period." />

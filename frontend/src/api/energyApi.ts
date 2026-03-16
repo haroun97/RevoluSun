@@ -3,7 +3,7 @@
  * Maps backend responses to frontend types where needed.
  */
 
-import { apiGet } from "./client";
+import { apiGet, apiPost } from "./client";
 import type {
   KpiData,
   TimeSeriesPoint,
@@ -95,6 +95,20 @@ export interface DateRangeDto {
 /** Get min/max date for the latest batch (for default range in UI). */
 export async function fetchDateRange(): Promise<DateRangeDto> {
   return apiGet<DateRangeDto>("/api/date-range");
+}
+
+/** Response from POST /api/admin/import-google-drive */
+export interface GoogleDriveImportResponse {
+  batch_id: number;
+  message: string;
+}
+
+/** Trigger backend to download a Drive file (by id) using the user's token and run the ingestion pipeline. */
+export async function importGoogleDriveFile(accessToken: string, fileId: string): Promise<GoogleDriveImportResponse> {
+  return apiPost<GoogleDriveImportResponse>("/api/admin/import-google-drive", {
+    access_token: accessToken,
+    file_id: fileId,
+  });
 }
 
 // --- API functions (with optional date range) ---

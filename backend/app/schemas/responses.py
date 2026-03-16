@@ -72,3 +72,14 @@ class QualityResponse(BaseModel):
     consistency_checks: list[dict[str, Any]]
     missing_tenants: list[str]
     issues: list[QualityIssueItem]
+
+
+# --- Admin: Google Drive import ---
+class GoogleDriveImportRequest(BaseModel):
+    access_token: str
+    file_id: str
+
+
+class GoogleDriveImportResponse(BaseModel):
+    batch_id: int
+    message: str

@@ -1,14 +1,17 @@
 """REST API routes."""
+import logging
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.schemas.responses import (
     BuildingTimeseriesPoint,
+    GoogleDriveImportRequest,
+    GoogleDriveImportResponse,
     HealthResponse,
     QualityIssueItem,
     QualityResponse,
@@ -27,6 +30,14 @@ from app.services.analytics import (
     sharing_aggregates,
     quality_from_db,
 )
+from app.services.google_drive_import import download_drive_file, save_to_temp_and_run_path
+from app.services.ingestion import run_ingestion
+from app.services.normalization import run_normalization
+from app.services.quality import run_quality_checks
+from app.services.resampling import run_resampling
+from app.services.sharing import run_sharing
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_date(s: str | None) -> date | None:
@@ -159,3 +170,53 @@ def quality(db: Session = Depends(get_db)):
         missing_tenants=data["missing_tenants"],
         issues=issues,
     )
+
+
+@router.post("/admin/import-google-drive", response_model=GoogleDriveImportResponse)
+def import_google_drive(
+    body: GoogleDriveImportRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Download a spreadsheet from Google Drive (user OAuth token + file id),
+    run the full ingestion pipeline, and return the new batch id.
+    """
+    access_token = (body.access_token or "").strip()
+    file_id = (body.file_id or "").strip()
+    if not access_token or not file_id:
+        raise HTTPException(status_code=400, detail="access_token and file_id are required")
+
+    try:
+        content, filename = download_drive_file(access_token, file_id)
+    except Exception as e:
+        logger.exception("Google Drive download failed: %s", e)
+        raise HTTPException(status_code=502, detail=f"Failed to download from Drive: {e!s}") from e
+
+    path = None
+    try:
+        path = save_to_temp_and_run_path(content, filename)
+        batch = run_ingestion(db, path)
+        db.commit()
+        run_normalization(db, batch.id)
+        db.commit()
+        run_resampling(db, batch.id)
+        db.commit()
+        run_quality_checks(db, batch.id)
+        db.commit()
+        run_sharing(db, batch.id)
+        db.commit()
+        logger.info("Google Drive import completed for batch id=%s", batch.id)
+        return GoogleDriveImportResponse(
+            batch_id=batch.id,
+            message=f"Imported {filename} as batch {batch.id}. Dashboard data has been updated.",
+        )
+    except Exception as e:
+        db.rollback()
+        logger.exception("Import pipeline failed: %s", e)
+        raise HTTPException(status_code=500, detail=f"Import failed: {e!s}") from e
+    finally:
+        if path and path.exists():
+            try:
+                path.unlink()
+            except OSError:
+                pass
