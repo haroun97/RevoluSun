@@ -7,6 +7,27 @@ interface Props {
 }
 
 export function TenantInsights({ tenants }: Props) {
+  if (!tenants.length) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="bg-card rounded-2xl p-4 border border-border/60 flex items-start gap-3">
+          <div className="p-2 rounded-xl bg-muted text-muted-foreground">
+            <Activity className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground">Tenant insights</div>
+            <div className="font-display font-semibold text-foreground text-sm">
+              No tenant data available
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Once tenant consumption data is loaded, highlights will appear here.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const sorted = [...tenants].sort((a, b) => b.totalConsumption - a.totalConsumption);
   const topConsumer = sorted[0];
   const lowestAvgDaily = [...tenants].sort((a, b) => a.avgDailyConsumption - b.avgDailyConsumption)[0];
