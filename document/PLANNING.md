@@ -359,3 +359,39 @@ After pipeline logic changes (e.g. negative-delta handling), existing DB data wa
 2. Restart the backend; on startup the pipeline runs again for the file in `DATA_FILE_PATH`.
 
 See **README** → "Re-import data (Option A — full pipeline reset)" for the full steps.
+
+---
+
+## 12. Data Quality: export marked spreadsheet (TODO)
+
+**Status:** Not started. Planned feature for the Data Quality & Coverage section.
+
+### 12.1 Goal
+
+- In the Data Quality section, add a button that produces a **duplicate of the actual imported spreadsheet** (the file that was imported, e.g. from Google Drive).
+- The duplicate is **renamed** as the original name + `_marked` (e.g. `Messdaten_Nürnberg_2024-2026_marked.xlsx`).
+- **Color by cell**: cells that have an issue (invalid delta, missing days, or mismatch) are highlighted with distinct colors (e.g. red / orange / yellow by issue type).
+- **Save in Google Drive** and allow the user to **open it immediately in Google Sheets** (e.g. upload with conversion to a Google Sheet and return the Sheet link so it opens in the browser).
+
+### 12.2 Approach (no implementation yet)
+
+| Step | Description |
+|------|-------------|
+| **Backend: get original file** | Use Drive API to download the imported file by its stored file ID (same file used for import; need persisted file ID + OAuth tokens with Drive read scope). |
+| **Backend: duplicate and color** | Load the downloaded Excel (e.g. openpyxl); for each (meter, date) with an issue from DB (invalid_delta, missing_day, mismatch), map to (sheet, column, row) and set cell fill. Save as `{original_basename}_marked.xlsx`. |
+| **Backend: save in Drive** | Upload the marked file to Drive (e.g. same folder as original) via Drive API (write scope). Optionally create as Google Sheet (mimeType `application/vnd.google-apps.spreadsheet`) so the link opens directly in Sheets. |
+| **Frontend** | Data Quality section: add button "Export marked spreadsheet" (or similar). On click, call new backend endpoint; backend returns file download or link to the new Drive/Sheet file; frontend opens link in new tab so user sees the marked spreadsheet in Google Sheets. |
+
+### 12.3 Todo list
+
+- [ ] **12.1 — Backend: persist Google Drive file ID on import**  
+  When user imports from Google Drive, store the chosen file ID (and original name) so the "marked" export can download that same file later.
+
+- [ ] **12.2 — Backend: endpoint to generate and upload marked file**  
+  New endpoint (e.g. `POST /api/quality/export-marked-spreadsheet` or `GET .../export-marked`) that: downloads the original from Drive, duplicates and colors cells by issue type, uploads `*_marked` to Drive (optionally as Google Sheet), returns download URL or file.
+
+- [ ] **12.3 — Backend: (meter, date) → (sheet, column, row) mapping**  
+  Use existing column mapping (e.g. constants / tenant_config) to resolve issue records from DB to Excel column and row; apply cell fill (e.g. red invalid delta, orange missing day, yellow mismatch).
+
+- [ ] **12.4 — Frontend: button and open-in-Sheets**  
+  In Data Quality & Coverage section, add button that calls the export endpoint and opens the returned link in a new tab (so the marked spreadsheet opens immediately in Google Sheets if converted to Sheet).

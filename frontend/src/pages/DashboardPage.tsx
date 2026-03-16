@@ -192,14 +192,6 @@ export default function DashboardPage() {
       gradient: "gradient-card-solar",
     },
     {
-      title: "Data Alerts",
-      value: `${kpi.dataQualityAlerts}`,
-      subtitle: dataAlertsSubtitle,
-      icon: AlertCircle,
-      iconColor: "text-solar",
-      gradient: "gradient-card-solar",
-    },
-    {
       title: "Coverage %",
       value:
         buildingCoveragePct != null ? `${buildingCoveragePct.toFixed(1)}%` : "–",
@@ -207,6 +199,14 @@ export default function DashboardPage() {
       icon: BarChart3,
       iconColor: "text-primary",
       gradient: "gradient-card-teal",
+    },
+    {
+      title: "Data Alerts",
+      value: `${kpi.dataQualityAlerts}`,
+      subtitle: dataAlertsSubtitle,
+      icon: AlertCircle,
+      iconColor: "text-solar",
+      gradient: "gradient-card-solar",
     },
   ];
 
@@ -216,7 +216,6 @@ export default function DashboardPage() {
         <Navbar />
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
         <p className="text-muted-foreground">Loading dashboard…</p>
-        <Footer />
       </div>
     );
   }
