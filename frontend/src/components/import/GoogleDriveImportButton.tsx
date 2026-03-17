@@ -1,3 +1,7 @@
+/**
+ * Button to import a spreadsheet from Google Drive: OAuth, picker, then POST to backend.
+ * Requires VITE_GOOGLE_CLIENT_ID. After a successful import we invalidate all dashboard queries.
+ */
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CloudDownload, Loader2 } from "lucide-react";
@@ -11,6 +15,7 @@ export function GoogleDriveImportButton() {
   const queryClient = useQueryClient();
   const clientId = typeof import.meta !== "undefined" && import.meta.env?.VITE_GOOGLE_CLIENT_ID;
 
+  /** Call the backend to import the file, then refresh all dashboard data. */
   const runImport = async (accessToken: string, fileId: string) => {
     setStatus("importing");
     setMessage("Importing…");
@@ -59,6 +64,7 @@ export function GoogleDriveImportButton() {
     });
   };
 
+  /** Start the flow: request OAuth token, then show picker and run import. */
   const handleClick = () => {
     if (!clientId?.trim()) {
       setMessage("VITE_GOOGLE_CLIENT_ID is not set.");

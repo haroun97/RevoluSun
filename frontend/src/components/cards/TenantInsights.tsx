@@ -1,3 +1,7 @@
+/**
+ * Four insight cards: highest demand, lowest avg daily, lowest avg weekly, most stable tenant.
+ * If there are no tenants, we show a single "No tenant data available" card.
+ */
 import { motion } from 'framer-motion';
 import { Trophy, TrendingDown, Activity } from 'lucide-react';
 import type { TenantData } from '@/types/energy';
@@ -32,7 +36,7 @@ export function TenantInsights({ tenants }: Props) {
   const topConsumer = sorted[0];
   const lowestAvgDaily = [...tenants].sort((a, b) => a.avgDailyConsumption - b.avgDailyConsumption)[0];
   const lowestAvgWeekly = [...tenants].sort((a, b) => a.avgWeeklyConsumption - b.avgWeeklyConsumption)[0];
-  // Most stable = lowest coefficient of variation
+  // Most stable = lowest coefficient of variation of daily consumption
   const mostStable = [...tenants].sort((a, b) => {
     const cvA = getCV(a);
     const cvB = getCV(b);
@@ -72,8 +76,10 @@ export function TenantInsights({ tenants }: Props) {
   );
 }
 
-function getCV(t: TenantData): number {
+/** Coefficient of variation (std/mean). Returns Infinity when there are no positive values so the tenant sorts last for "most stable". Exported for tests. */
+export function getCV(t: TenantData): number {
   const vals = t.timeSeries.map(p => p.consumption).filter(v => v > 0);
+  if (vals.length === 0) return Infinity;
   const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
   const variance = vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length;
   return Math.sqrt(variance) / mean;

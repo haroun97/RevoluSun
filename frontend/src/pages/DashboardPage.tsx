@@ -1,3 +1,8 @@
+/**
+ * Main dashboard: loads all data from the API and renders KPIs, filters, and charts.
+ * Uses React Query to fetch summary, timeseries, tenants, sharing, and quality.
+ * Date range is set from the API date-range or defaults to last 90 days.
+ */
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -25,6 +30,7 @@ import {
 } from "@/api/energyApi";
 import type { KpiData, Granularity } from "@/types/energy";
 
+/** Build a date range that ends on endDate and spans the previous 90 days (for default filter). */
 function last90DaysFrom(endDate: string): DateRange {
   const end = new Date(endDate + "T12:00:00");
   const start = new Date(end);
@@ -35,6 +41,7 @@ function last90DaysFrom(endDate: string): DateRange {
   };
 }
 
+/** Section title and subtitle with scroll-margin for in-page links. */
 function SectionHeader({ id, title, subtitle }: { id: string; title: string; subtitle: string }) {
   return (
     <motion.div
@@ -50,6 +57,7 @@ function SectionHeader({ id, title, subtitle }: { id: string; title: string; sub
   );
 }
 
+/** Fallback KPI values when the API has not returned yet. */
 const defaultKpi: KpiData = {
   totalConsumption: 0,
   totalPvGeneration: 0,
@@ -63,6 +71,7 @@ export default function DashboardPage() {
   const [granularity, setGranularity] = useState<Granularity>("daily");
   const [dateRange, setDateRange] = useState<DateRange | null>(null);
 
+  // Get min/max dates from the API so we can set default and full range in the filter
   const dateRangeQuery = useQuery({
     queryKey: ["dateRange"],
     queryFn: fetchDateRange,

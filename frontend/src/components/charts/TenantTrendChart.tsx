@@ -1,3 +1,7 @@
+/**
+ * Line chart: each tenant's daily consumption over time (one line per tenant).
+ * We merge all tenant time series into one dataset keyed by date.
+ */
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import { ChartWrapper } from './ChartWrapper';
 import type { TenantData } from '@/types/energy';
@@ -7,7 +11,7 @@ interface Props {
 }
 
 export function TenantTrendChart({ tenants }: Props) {
-  // Merge all tenant time series into unified data
+  // Build a map: date -> { tenantId: consumption } so Recharts can plot one line per tenant
   const dateMap = new Map<string, Record<string, number>>();
   tenants.forEach(t => {
     t.timeSeries.forEach(p => {

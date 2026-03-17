@@ -1,4 +1,10 @@
-"""Startup: run full pipeline if DATA_FILE_PATH set and no data for that file yet."""
+"""
+Startup: run the full import pipeline when the app starts if needed.
+
+If DATA_FILE_PATH points to an Excel file and we have not yet imported that file
+(no ImportBatch with that filename), we run: ingestion -> normalization ->
+resampling -> quality -> sharing. Each step is committed so the DB stays consistent.
+"""
 import logging
 
 from sqlalchemy import select
@@ -17,7 +23,13 @@ logger = logging.getLogger(__name__)
 
 
 def ensure_data_loaded() -> None:
-    """If DATA_FILE_PATH is set and file exists, and no import for that file exists, run full pipeline."""
+    """
+    Run the full import pipeline once if DATA_FILE_PATH is set and the file is not yet imported.
+
+    We check if an ImportBatch with the same filename already exists. If yes, we skip.
+    If no, we run all five stages (ingestion, normalization, resampling, quality, sharing)
+    and commit after each stage.
+    """
     path = get_data_file_path()
     if not path:
         logger.info("DATA_FILE_PATH not set or file missing; skipping import.")

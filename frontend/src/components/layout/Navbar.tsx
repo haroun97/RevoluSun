@@ -1,3 +1,7 @@
+/**
+ * Top navigation: logo and in-page links (Overview, Tenants, Energy Sharing, Data Quality).
+ * Fixed at top; background becomes solid on scroll. Mobile: hamburger menu with same links.
+ */
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Sun } from 'lucide-react';

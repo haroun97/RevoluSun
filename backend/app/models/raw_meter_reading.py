@@ -1,4 +1,9 @@
-"""RawMeterReading ORM model."""
+"""
+Raw meter readings as read from the Excel file (before normalization).
+
+Each row is one reading: one meter at one time with a cumulative kWh value.
+We keep this so we can re-run the pipeline or debug without re-reading Excel.
+"""
 from datetime import datetime
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
@@ -8,6 +13,8 @@ from app.db.base import Base
 
 
 class RawMeterReading(Base):
+    """One row from Excel: one meter, one timestamp, one cumulative value."""
+
     __tablename__ = "raw_meter_readings"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

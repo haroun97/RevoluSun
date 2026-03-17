@@ -1,4 +1,10 @@
-"""REST API routes."""
+"""
+REST API routes for the energy dashboard.
+
+All endpoints are under the /api prefix (set in main.py). They read from the
+database via the analytics service and return JSON. Optional query params
+start_date and end_date filter data by date range (ISO format YYYY-MM-DD).
+"""
 import logging
 from datetime import date
 from typing import Annotated
@@ -41,12 +47,14 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_date(s: str | None) -> date | None:
+    """Parse an optional ISO date string (YYYY-MM-DD); return None if missing or invalid."""
     if not s or not s.strip():
         return None
     try:
         return date.fromisoformat(s.strip())
     except ValueError:
         return None
+
 
 router = APIRouter()
 

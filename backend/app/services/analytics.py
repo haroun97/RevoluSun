@@ -1,4 +1,10 @@
-"""Query helpers for API: aggregate from persisted tables."""
+"""
+Query helpers for the API: read from the database and return data for the dashboard.
+
+All functions take a database session and usually the latest import batch.
+They aggregate from daily_meter_consumption, daily_energy_sharing, and
+data_quality_issues. Optional start_date/end_date filter the date range.
+"""
 from datetime import date, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -28,13 +34,13 @@ def _parse_date(s: str | None) -> date | None:
 
 
 def get_latest_batch_id(session: Session) -> int | None:
-    """Return latest import_batch id by uploaded_at, or None."""
+    """Return the most recent import batch id (by upload time), or None if no data."""
     r = session.scalar(select(ImportBatch.id).order_by(ImportBatch.uploaded_at.desc()).limit(1))
     return r
 
 
 def get_date_range(session: Session, batch_id: int | None = None) -> tuple[date | None, date | None]:
-    """Return (min_date, max_date) for the latest batch, or (None, None)."""
+    """Return the earliest and latest date in daily consumption for this batch (for UI date picker)."""
     if batch_id is None:
         batch_id = get_latest_batch_id(session)
     if batch_id is None:
@@ -54,7 +60,7 @@ def summary_from_db(
     start_date: date | None = None,
     end_date: date | None = None,
 ) -> dict | None:
-    """Aggregate total building consumption, PV, self-consumption ratio, surplus ratio, active tenants, quality alert count."""
+    """Build the summary KPIs: building consumption, PV total, self-consumption %, surplus %, tenant count, quality alert count."""
     if batch_id is None:
         batch_id = get_latest_batch_id(session)
     if batch_id is None:

@@ -1,3 +1,6 @@
+/**
+ * Wrapper for all dashboard charts: title, optional description, and consistent animation.
+ */
 import { ReactNode } from 'react';
 import { motion } from 'framer-motion';
 

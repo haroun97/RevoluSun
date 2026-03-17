@@ -1,3 +1,6 @@
+/**
+ * Stacked area chart: self-consumed PV vs surplus to grid over time.
+ */
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import { ChartWrapper } from './ChartWrapper';
 import type { TimeSeriesPoint } from '@/types/energy';

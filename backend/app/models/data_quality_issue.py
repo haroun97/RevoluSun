@@ -1,4 +1,9 @@
-"""DataQualityIssue ORM model."""
+"""
+Data quality findings: negative deltas, missing days, tenant/building mismatches, etc.
+
+Each row is one issue (e.g. "negative delta on meter X on date Y"). The dashboard
+uses this for the Data Quality view and alert counts.
+"""
 from datetime import date
 
 from sqlalchemy import Date, ForeignKey, String, Text
@@ -8,6 +13,8 @@ from app.db.base import Base
 
 
 class DataQualityIssue(Base):
+    """One quality issue (e.g. negative delta, missing tenant) for this import batch."""
+
     __tablename__ = "data_quality_issues"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

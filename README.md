@@ -84,18 +84,6 @@ Install and start PostgreSQL on your machine, then create the database and user 
 
 Ensure the server is listening on `localhost:5432` and that the user/password in `.env` match your local Postgres configuration.
 
-**Alternatively: run PostgreSQL with Docker**
-
-If you prefer not to install PostgreSQL locally:
-
-```bash
-docker run --name revolusun-postgres \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=revolusun \
-  -p 5432:5432 \
-  -d postgres:15
-```
 
 **Run database migrations** (from the `backend/` directory):
 
@@ -104,12 +92,7 @@ cd backend
 alembic upgrade head
 ```
 
-**Additional backend dependencies** (add to backend environment if not present):
-
--   `sqlalchemy`, `alembic`, `psycopg[binary]`, `python-dotenv`
--   Optional: `pandas`, `openpyxl`
-
-**Re-import data (Option A — full pipeline reset)**
+**Re-import data (full pipeline reset)**
 
 To clear existing analytics data and re-run the full import pipeline (e.g. so data reflects the latest processing logic, such as negative-delta handling):
 
@@ -128,15 +111,19 @@ On startup, the backend sees no existing import for the file named in `DATA_FILE
 ## Frontend
 
 The frontend provides a simple dashboard interface for visualizing the
-processed energy data.
+processed energy data. Run all frontend commands from the **`frontend/`** directory.
 
 ### Install dependencies
+
+From the `frontend/` directory:
 
 ``` bash
 npm install
 ```
 
 ### Start the development server
+
+From the `frontend/` directory:
 
 ``` bash
 npm run dev
@@ -228,7 +215,7 @@ than a production-ready platform**.
 ## Technology Stack and Rationale
 
 The chosen technology stack prioritizes **fast development, clarity, and
-strong support for data processing**.
+strong support for data processing**. See the [Technology Decision Matrix](#technology-decision-matrix) below for alternatives considered.
 
 ### Backend
 
@@ -261,78 +248,33 @@ implementation of dashboard charts.
 
 #### Backend Framework Comparison
 
-  -----------------------------------------------------------------------
-  Option            Pros              Cons              Decision
-  ----------------- ----------------- ----------------- -----------------
-  FastAPI           Lightweight, fast Smaller ecosystem **Chosen**
-                    API development,  compared to       
-                    strong typing     Django            
-                    support, ideal                      
-                    for data services                   
+| Option | Pros | Cons | Decision |
+|--------|------|------|----------|
+| **FastAPI** | Lightweight, fast API development, strong typing support, ideal for data services | Smaller ecosystem compared to Django | **Chosen** |
+| Django | Mature framework, built-in ORM and admin tools | Heavy framework for a simple data processing API | Not chosen |
+| Node.js (Express) | Flexible JavaScript ecosystem | Less convenient for data-heavy processing | Not chosen |
 
-  Django            Mature framework, Heavy framework   Not chosen
-                    built-in ORM and  for a simple data 
-                    admin tools       processing API    
-
-  Node.js (Express) Flexible          Less convenient   Not chosen
-                    JavaScript        for data-heavy    
-                    ecosystem         processing        
-  -----------------------------------------------------------------------
-
-FastAPI was selected because the backend primarily acts as a **thin API
-layer on top of data processing logic**.
-
-Using Python also enables leveraging **Pandas**, which simplifies
-manipulation of energy datasets.
-
-------------------------------------------------------------------------
+FastAPI was selected because the backend primarily acts as a **thin API layer on top of data processing logic**. Using Python also enables leveraging **Pandas**, which simplifies manipulation of energy datasets.
 
 #### Frontend Framework Comparison
 
-  -----------------------------------------------------------------------
-  Option            Pros              Cons              Decision
-  ----------------- ----------------- ----------------- -----------------
-  React +           Large ecosystem,  Slightly more     **Chosen**
-  TypeScript        component-based   setup complexity  
-                    architecture,                       
-                    strong tooling                      
+| Option | Pros | Cons | Decision |
+|--------|------|------|----------|
+| **React + TypeScript** | Large ecosystem, component-based architecture, strong tooling | Slightly more setup complexity | **Chosen** |
+| Vue | Simpler learning curve | Smaller ecosystem for analytics dashboards | Not chosen |
+| Vanilla JavaScript | Minimal dependencies | Harder to scale and maintain | Not chosen |
 
-  Vue               Simpler learning  Smaller ecosystem Not chosen
-                    curve             for analytics     
-                                      dashboards        
-
-  Vanilla           Minimal           Harder to scale   Not chosen
-  JavaScript        dependencies      and maintain      
-  -----------------------------------------------------------------------
-
-React was selected due to its **mature ecosystem for building
-interactive dashboards** and strong compatibility with charting
-libraries.
-
-------------------------------------------------------------------------
+React was selected due to its **mature ecosystem for building interactive dashboards** and strong compatibility with charting libraries.
 
 #### Chart Library Comparison
 
-  -----------------------------------------------------------------------
-  Option            Pros              Cons              Decision
-  ----------------- ----------------- ----------------- -----------------
-  Recharts          React-native      Less              **Chosen**
-                    components, easy  customization     
-                    integration, fast than D3           
-                    to implement                        
+| Option | Pros | Cons | Decision |
+|--------|------|------|----------|
+| **Recharts** | React-native components, easy integration, fast to implement | Less customization than D3 | **Chosen** |
+| Chart.js | Popular and simple chart library | Less React-focused architecture | Not chosen |
+| D3.js | Extremely powerful visualization capabilities | Complex and time-consuming to implement | Not chosen |
 
-  Chart.js          Popular and       Less              Not chosen
-                    simple chart      React-focused     
-                    library           architecture      
-
-  D3.js             Extremely         Complex and       Not chosen
-                    powerful          time-consuming to 
-                    visualization     implement         
-                    capabilities                        
-  -----------------------------------------------------------------------
-
-Recharts was chosen because it allows **rapid implementation of
-dashboard charts within the MVP time constraint**.
+Recharts was chosen because it allows **rapid implementation of dashboard charts within the MVP time constraint**.
 
 ------------------------------------------------------------------------
 
@@ -399,25 +341,7 @@ imported and derived data provides important engineering benefits:
 ### Architectural decision
 
 The application uses **Pandas for transformation** and **PostgreSQL for
-persistence**.
-
-Recommended processing flow:
-
-```text
-Excel file
-   ↓
-Pandas ingestion + cleaning
-   ↓
-Raw readings persisted in PostgreSQL
-   ↓
-Normalization and daily delta computation
-   ↓
-Derived analytics tables persisted in PostgreSQL
-   ↓
-FastAPI endpoints query persisted results
-   ↓
-React dashboard renders API data
-```
+persistence**. The processing flow is the same as in [System Architecture](#system-architecture) above: Excel → Pandas ingestion → raw and derived tables in PostgreSQL → FastAPI → React.
 
 This keeps the analytics pipeline explicit and inspectable while still
 leveraging Python for time-series logic.
@@ -728,10 +652,3 @@ implemented:
 These improvements would transform the MVP into a **more robust energy
 analytics platform**.
 
-------------------------------------------------------------------------
-
-# Interview Framing
-
-Suggested explanation during the presentation:
-
-> I chose PostgreSQL for persistence because even though the source dataset is small, the application benefits from preserving raw imports, normalized readings, derived daily consumption, allocation results, and quality flags. Pandas handles the transformation pipeline well, while PostgreSQL makes the outputs inspectable, reproducible, and easier to serve through stable APIs. This gives the MVP a cleaner architecture and a credible path toward production.

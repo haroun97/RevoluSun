@@ -18,9 +18,13 @@ from app.models import DailyMeterConsumption, NormalizedMeterReading
 
 
 def run_resampling(session: Session, import_batch_id: int) -> int:
-    """For each meter, sort by meter_id and timestamp, compute deltas, aggregate only
-    valid (non-negative) deltas to daily, persist. Negative deltas are flagged but
-    excluded from aggregation. Returns count of daily rows."""
+    """
+    For each meter: sort by time, compute deltas between consecutive readings, sum by day.
+
+    Only non-negative deltas are added to daily consumption. Negative deltas are
+    recorded (is_valid=False, quality_flag='negative_delta') for the quality report
+    but not included in the daily total. Returns the number of daily rows written.
+    """
     stmt = select(NormalizedMeterReading).where(
         NormalizedMeterReading.import_batch_id == import_batch_id
     ).order_by(NormalizedMeterReading.meter_id, NormalizedMeterReading.timestamp)

@@ -1,3 +1,6 @@
+/**
+ * Page footer: RevoluSUN branding and short note about the case study dataset.
+ */
 import { Sun } from 'lucide-react';
 
 export function Footer() {

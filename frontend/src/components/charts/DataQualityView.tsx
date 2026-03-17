@@ -1,3 +1,7 @@
+/**
+ * Data quality section: breakdown counts, coverage table per meter, and expandable alert list.
+ * Shows negative deltas, missing days, tenant/building mismatch, and missing tenants.
+ */
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, Info, CheckCircle2, ShieldAlert, ChevronDown, ChevronRight } from 'lucide-react';
@@ -56,6 +60,7 @@ export type AlertGroup = {
   alerts: DataQualityAlert[];
 };
 
+/** Group alerts by meter and issue type for the expandable list. */
 function buildAlertGroups(alerts: DataQualityAlert[]): AlertGroup[] {
   const map = new Map<string, DataQualityAlert[]>();
   for (const a of alerts) {

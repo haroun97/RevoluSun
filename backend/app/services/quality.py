@@ -1,4 +1,11 @@
-"""Stage 4: Detect quality issues and persist to data_quality_issues."""
+"""
+Stage 4: Run data quality checks and save findings to data_quality_issues.
+
+We look for: (1) negative deltas (already flagged in daily_meter_consumption),
+(2) missing days per meter (gaps in the date range), and (3) days where the sum
+of tenant consumption does not match the building total (mismatch). Each finding
+is stored as one DataQualityIssue row for the dashboard.
+"""
 from datetime import date
 
 import pandas as pd
@@ -9,7 +16,7 @@ from app.models import DailyMeterConsumption, DataQualityIssue
 
 
 def run_quality_checks(session: Session, import_batch_id: int) -> int:
-    """Detect negative deltas, gaps, coverage, tenant-sum vs building mismatch. Returns issue count."""
+    """Run all quality checks for this batch and insert DataQualityIssue rows. Returns number of issues created."""
     stmt = select(DailyMeterConsumption).where(
         DailyMeterConsumption.import_batch_id == import_batch_id
     )

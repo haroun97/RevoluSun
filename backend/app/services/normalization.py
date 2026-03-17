@@ -1,4 +1,10 @@
-"""Stage 2: Normalize raw readings to cumulative_kwh and persist."""
+"""
+Stage 2: Convert raw readings to kWh and save as normalized readings.
+
+We take each RawMeterReading, multiply raw_value by conversion_factor to get
+cumulative_kwh, and write one NormalizedMeterReading per row. This gives a
+single unit (kWh) for the next stage (daily deltas).
+"""
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -6,7 +12,7 @@ from app.models import NormalizedMeterReading, RawMeterReading
 
 
 def run_normalization(session: Session, import_batch_id: int) -> int:
-    """Read raw_meter_readings for batch, apply conversion, write normalized_meter_readings. Returns count."""
+    """Read all raw readings for this batch, convert to kWh, insert normalized rows. Returns count inserted."""
     stmt = select(RawMeterReading).where(RawMeterReading.import_batch_id == import_batch_id)
     rows = session.scalars(stmt).all()
     count = 0

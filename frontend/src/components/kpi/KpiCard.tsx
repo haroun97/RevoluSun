@@ -1,3 +1,7 @@
+/**
+ * One KPI card: icon, value, title, and subtitle.
+ * Used in the secondary row (Surplus Ratio, Grid Import, Grid Export, Data Alerts, Coverage %).
+ */
 import { motion } from 'framer-motion';
 import type { LucideIcon } from 'lucide-react';
 

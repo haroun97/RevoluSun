@@ -13,8 +13,14 @@ from app.models import DailyEnergySharing, DailyMeterConsumption
 
 
 def run_sharing(session: Session, import_batch_id: int) -> int:
-    """Per day: tenant_demand_i, pv_total, total_tenant_demand; allocated_pv_i = min(demand_i, pv_total * demand_i/total_demand); persist. Returns count.
-    Only valid (non-negative) deltas are included in PV and tenant demand."""
+    """
+    For each day: split available PV among tenants in proportion to their demand.
+
+    We use only valid daily consumption (is_valid=True). For each day we have
+    total PV and each tenant's demand; we give each tenant a share of PV
+    (demand_i / total_demand * pv_total), then grid_import = demand - allocated_pv.
+    self_sufficiency_ratio = allocated_pv / demand. Returns number of rows written.
+    """
     stmt = select(DailyMeterConsumption).where(
         DailyMeterConsumption.import_batch_id == import_batch_id,
         DailyMeterConsumption.is_valid.is_(True),

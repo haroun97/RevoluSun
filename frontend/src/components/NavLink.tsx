@@ -1,3 +1,7 @@
+/**
+ * Wrapper around React Router's NavLink that accepts className as a string
+ * and optional activeClassName / pendingClassName for styling the link state.
+ */
 import { NavLink as RouterNavLink, NavLinkProps } from "react-router-dom";
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";

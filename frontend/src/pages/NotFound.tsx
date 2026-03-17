@@ -1,3 +1,7 @@
+/**
+ * 404 page: shown when the user goes to a path that has no route.
+ * Logs the attempted path and offers a link back to the dashboard.
+ */
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
 

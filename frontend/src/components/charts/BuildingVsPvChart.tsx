@@ -1,3 +1,6 @@
+/**
+ * Area chart: building consumption vs PV generation over time (daily from API).
+ */
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import { ChartWrapper } from './ChartWrapper';
 import type { TimeSeriesPoint } from '@/types/energy';

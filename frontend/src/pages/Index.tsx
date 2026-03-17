@@ -1,5 +1,7 @@
-// Update this page (the content is just a fallback if you fail to update the page)
-
+/**
+ * Placeholder home page (not used in current routes; "/" renders DashboardPage).
+ * Shown here as a simple fallback / template.
+ */
 const Index = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">

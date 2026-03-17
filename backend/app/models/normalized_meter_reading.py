@@ -1,4 +1,9 @@
-"""NormalizedMeterReading ORM model."""
+"""
+Cleaned cumulative readings after applying conversion factors and standardizing IDs.
+
+Raw readings are converted to a single unit (kWh) and meter/tenant IDs are normalized.
+This is the input for computing daily consumption (deltas between consecutive readings).
+"""
 from datetime import datetime
 
 from sqlalchemy import Date, DateTime, Float, ForeignKey, String
@@ -8,6 +13,8 @@ from app.db.base import Base
 
 
 class NormalizedMeterReading(Base):
+    """One cumulative reading in kWh for one meter at one time (cleaned from raw)."""
+
     __tablename__ = "normalized_meter_readings"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

@@ -1,4 +1,9 @@
-"""DailyMeterConsumption ORM model."""
+"""
+Daily consumption per meter: one row = one meter, one day, consumption in kWh.
+
+Computed from normalized cumulative readings: we take the difference (delta) between
+consecutive readings and aggregate by day. Negative deltas are flagged (is_valid=False).
+"""
 from datetime import date
 
 from sqlalchemy import Boolean, Date, Float, ForeignKey, String
@@ -8,6 +13,8 @@ from app.db.base import Base
 
 
 class DailyMeterConsumption(Base):
+    """One day's consumption (kWh) for one meter; used for charts and summaries."""
+
     __tablename__ = "daily_meter_consumption"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

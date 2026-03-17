@@ -15,9 +15,10 @@ import type {
   QualityAlertBreakdown,
 } from "@/types/energy";
 
+/** Fixed colors for tenant lines/bars; reused by tenant index so each tenant keeps the same color. */
 const TENANT_COLORS = ["#3E8F87", "#F2B544", "#7ED3C1", "#E07A5F", "#5B8C5A", "#8B7EC8", "#C9A227", "#6B9080", "#E8B4B8", "#A8DADC", "#457B9D", "#1D3557", "#F4A261"];
 
-// --- Backend response types (minimal) ---
+// --- Backend response types (match API JSON; we map these to frontend types below) ---
 interface SummaryDto {
   total_building_consumption: number;
   total_pv_generation: number;

@@ -1,4 +1,9 @@
-"""ORM models for import and analytics."""
+"""
+Database models (tables) for the import pipeline and analytics.
+
+ImportBatch -> RawMeterReading -> NormalizedMeterReading -> DailyMeterConsumption.
+We also have DailyEnergySharing (PV allocation) and DataQualityIssue (quality findings).
+"""
 from app.models.import_batch import ImportBatch
 from app.models.raw_meter_reading import RawMeterReading
 from app.models.normalized_meter_reading import NormalizedMeterReading

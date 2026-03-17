@@ -1,3 +1,8 @@
+/**
+ * Types used by the dashboard for KPIs, charts, and data quality.
+ * API responses are mapped to these shapes in api/energyApi.ts.
+ */
+
 export interface TimeSeriesPoint {
   date: string;
   buildingConsumption: number;

@@ -1,3 +1,7 @@
+/**
+ * Date range and granularity filters for the dashboard.
+ * Presets: Last 30 days, Last 90 days, Full period. Granularity: Daily / Weekly / Monthly (for building charts).
+ */
 import { motion } from 'framer-motion';
 import { Calendar, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,6 +30,7 @@ const granularities: { value: Granularity; label: string }[] = [
   { value: 'monthly', label: 'Monthly' },
 ];
 
+/** Format a date range for display (e.g. "Dec 7, 2025 – Mar 4, 2026"). */
 function formatRange(range: DateRange): string {
   const start = new Date(range.start + 'T12:00:00');
   const end = new Date(range.end + 'T12:00:00');

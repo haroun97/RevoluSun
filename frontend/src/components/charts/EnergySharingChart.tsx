@@ -1,3 +1,6 @@
+/**
+ * Stacked bar chart: PV allocated vs grid import per tenant, plus cards with self-sufficiency %.
+ */
 import { motion } from 'framer-motion';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import { ChartWrapper } from './ChartWrapper';

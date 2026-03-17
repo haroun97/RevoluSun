@@ -22,3 +22,8 @@ dist/
 *.log
 .DS_Store
 
+# Document: data and generated artifacts (README says to point DATA_FILE_PATH at your Excel)
+document/*.xlsx
+document/*.pdf
+document/*.md
+document

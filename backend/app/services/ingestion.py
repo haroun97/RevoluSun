@@ -1,4 +1,10 @@
-"""Stage 1: Excel ingestion into raw_meter_readings."""
+"""
+Stage 1: Read the Excel file and write raw meter readings into the database.
+
+We open each sheet, detect which meter type it is (tenant, building total, or PV),
+find the timestamp and value columns, and insert one RawMeterReading per row.
+The building-level meter uses a conversion factor (50) from the README; others use 1.0.
+"""
 import re
 from datetime import datetime
 from pathlib import Path
@@ -8,21 +14,22 @@ from sqlalchemy.orm import Session
 
 from app.models import ImportBatch, RawMeterReading
 
-# Building-level meter conversion factor per README
+# Building-level meter conversion factor per README (Summenzähler)
 BUILDING_CONVERSION_FACTOR = 50.0
 DEFAULT_CONVERSION_FACTOR = 1.0
 
-# Sheet name patterns
+# How we recognize sheet names: tenant = "Kunde N", building = Summenzähler/Summe/..., PV = PV/...
 TENANT_SHEET_PATTERN = re.compile(r"^Kunde\s*(\d+)$", re.IGNORECASE)
 BUILDING_SHEET_NAMES = ("Summenzähler", "Summe", "Building", "building_total")
 PV_SHEET_NAMES = ("PV", "pv", "Photovoltaik", "Solar")
 
-# Column name variants for timestamp and value
+# Possible column names for timestamp and cumulative value (Excel may use German or English)
 TIMESTAMP_COLS = ("timestamp", "Timestamp", "Zeit", "Datum", "Date", "time", "datetime")
 VALUE_COLS = ("value", "Value", "Wert", "Reading", "raw_value", "kwh", "cumulative")
 
 
 def _detect_timestamp_column(df: pd.DataFrame) -> str | None:
+    """Find the column that holds the reading time (by known names or keywords)."""
     for c in TIMESTAMP_COLS:
         if c in df.columns:
             return c
@@ -33,13 +40,14 @@ def _detect_timestamp_column(df: pd.DataFrame) -> str | None:
 
 
 def _detect_value_column(df: pd.DataFrame) -> str | None:
+    """Find the column that holds the cumulative meter value (by name or first numeric column)."""
     for c in VALUE_COLS:
         if c in df.columns:
             return c
     for c in df.columns:
         if "value" in c.lower() or "wert" in c.lower() or "kwh" in c.lower() or "reading" in c.lower():
             return c
-    # Fallback: first numeric column that is not an index
+    # Fallback: use the first numeric column
     for c in df.columns:
         if pd.api.types.is_numeric_dtype(df[c]):
             return c
@@ -47,6 +55,7 @@ def _detect_value_column(df: pd.DataFrame) -> str | None:
 
 
 def _parse_timestamp(ts: object) -> datetime | None:
+    """Convert a cell value to a datetime; return None if missing or invalid."""
     if ts is None or (isinstance(ts, float) and pd.isna(ts)):
         return None
     if isinstance(ts, datetime):
@@ -60,6 +69,7 @@ def _parse_timestamp(ts: object) -> datetime | None:
 
 
 def _parse_value(v: object) -> float | None:
+    """Convert a cell value to float; return None if missing or not a number."""
     if v is None or (isinstance(v, float) and pd.isna(v)):
         return None
     try:
@@ -69,13 +79,13 @@ def _parse_value(v: object) -> float | None:
 
 
 def load_excel_sheets(path: Path) -> dict[str, pd.DataFrame]:
-    """Load all sheets from Excel. Keys = sheet names."""
+    """Load every sheet from the Excel file; returns a dict sheet_name -> DataFrame."""
     xl = pd.ExcelFile(path, engine="openpyxl")
     return {name: xl.parse(name) for name in xl.sheet_names}
 
 
 def classify_sheet(name: str) -> tuple[str, str | None] | None:
-    """Return (meter_type, tenant_id_or_None) or None if sheet is ignored."""
+    """Decide if this sheet is tenant, building_total, or pv; return (meter_type, tenant_id or None). Skip unknown sheets."""
     name = name.strip()
     m = TENANT_SHEET_PATTERN.match(name)
     if m:
@@ -97,7 +107,7 @@ def ingest_sheet(
     tenant_id: str | None,
     df: pd.DataFrame,
 ) -> int:
-    """Parse DataFrame and insert raw readings. Returns count inserted."""
+    """Read rows from the DataFrame and insert RawMeterReading rows. Returns how many were inserted."""
     ts_col = _detect_timestamp_column(df)
     val_col = _detect_value_column(df)
     if not ts_col or not val_col:
@@ -130,7 +140,12 @@ def ingest_sheet(
 
 
 def run_ingestion(session: Session, file_path: Path) -> ImportBatch:
-    """Load Excel, create import_batch, persist raw rows. Raises on fatal errors."""
+    """
+    Load the Excel file, create one ImportBatch, and insert all raw readings.
+
+    Only sheets we recognize (tenant, building, PV) are imported. Returns the
+    new ImportBatch. Caller must commit the session.
+    """
     batch = ImportBatch(
         filename=file_path.name,
         status="importing",

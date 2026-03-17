@@ -1,3 +1,7 @@
+/**
+ * Hero section: title, subtitle, and four main KPIs (PV generation, building demand, self-consumption %, active tenants).
+ * Uses the summary KPIs from the API to show the big numbers at the top of the dashboard.
+ */
 import { motion } from 'framer-motion';
 import { Sun, Zap, BarChart3, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +11,7 @@ interface HeroSummaryProps {
   kpi: KpiData;
 }
 
+/** Which KPI to show and how to format it (MWh, %, or count). */
 const summaryItems = [
   { key: 'pvGen', label: 'PV Generation', icon: Sun, format: (v: number) => `${(v / 1000).toFixed(1)} MWh`, color: 'text-solar' },
   { key: 'demand', label: 'Building Demand', icon: Zap, format: (v: number) => `${(v / 1000).toFixed(1)} MWh`, color: 'text-primary' },

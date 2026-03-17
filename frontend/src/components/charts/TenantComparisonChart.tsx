@@ -1,3 +1,7 @@
+/**
+ * Horizontal bar chart: compare tenants by total, avg daily, avg weekly, or active days.
+ * Toggle buttons switch the metric shown.
+ */
 import { useState } from 'react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ChartWrapper } from './ChartWrapper';

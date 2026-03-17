@@ -1,4 +1,9 @@
-"""DailyEnergySharing ORM model."""
+"""
+Simulated PV allocation per tenant per day: how much PV each tenant gets and how much from grid.
+
+We split available PV proportionally by tenant demand; the rest of demand is grid_import.
+self_sufficiency_ratio = allocated_pv / tenant_demand (or 0 if no demand).
+"""
 from datetime import date
 
 from sqlalchemy import Date, Float, ForeignKey, String
@@ -8,6 +13,8 @@ from app.db.base import Base
 
 
 class DailyEnergySharing(Base):
+    """One day's energy-sharing result for one tenant: demand, PV allocated, grid import, self-sufficiency."""
+
     __tablename__ = "daily_energy_sharing"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

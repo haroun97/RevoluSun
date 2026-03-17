@@ -1,4 +1,10 @@
-"""Download a spreadsheet from Google Drive using a user OAuth access token."""
+"""
+Download a spreadsheet from Google Drive using the user's OAuth access token.
+
+Used by the POST /api/admin/import-google-drive endpoint: the frontend sends
+token + file id, we download the file (or export Google Sheets as xlsx), then
+the API saves it to a temp file and runs the same import pipeline as for local Excel.
+"""
 import logging
 import tempfile
 from pathlib import Path
@@ -57,7 +63,7 @@ def download_drive_file(access_token: str, file_id: str) -> tuple[bytes, str]:
 
 
 def save_to_temp_and_run_path(content: bytes, filename: str) -> Path:
-    """Write content to a temporary file and return the Path (caller must unlink)."""
+    """Write the downloaded bytes to a temporary file and return its path. Caller must delete the file when done."""
     suffix = Path(filename).suffix or ".xlsx"
     fd, path = tempfile.mkstemp(suffix=suffix, prefix="revolusun_import_")
     try:
