@@ -36,12 +36,9 @@ The frontend communicates with the backend through a **REST API**.
 
 ## Backend
 
-The backend is responsible for:
-
--   loading and processing the Excel dataset
--   converting cumulative readings into consumption intervals
--   computing aggregated metrics
--   exposing data through REST endpoints
+The backend loads and processes the Excel dataset and serves results via
+REST. Pipeline and design are described in [Design & Architecture
+Overview](#design--architecture-overview).
 
 ### Install dependencies
 
@@ -110,8 +107,8 @@ On startup, the backend sees no existing import for the file named in `DATA_FILE
 
 ## Frontend
 
-The frontend provides a simple dashboard interface for visualizing the
-processed energy data. Run all frontend commands from the **`frontend/`** directory.
+Run all frontend commands from the **`frontend/`** directory. The
+dashboard fetches data from the backend API.
 
 ### Install dependencies
 
@@ -129,30 +126,56 @@ From the `frontend/` directory:
 npm run dev
 ```
 
-The frontend will start a local development server and communicate with
-the backend REST API to fetch data.
-
 ------------------------------------------------------------------------
 
 # Design & Architecture Overview
 
-This section explains the core architectural decisions made while
-building the MVP.
+------------------------------------------------------------------------
 
-The implementation prioritizes:
+## Approach Summary
 
--   clear data processing logic
--   simple system architecture
--   quick development within a limited time window
+Short overview of the problem, scope, and main decisions. Details follow
+in the sections below.
+
+**Problem.** Data is **cumulative meter readings** (running totals), so
+consumption = difference between consecutive readings. The dataset mixes
+tenant, building, and PV meters with irregular timestamps. Priority:
+turn this into **clean daily consumption** and build a dashboard on top.
+See [Problem Understanding](#problem-understanding) for dataset details.
+
+**Scope.** Within a 4–6 hour time box we aimed for a **minimal
+end-to-end app**: Excel → pipeline → database → REST API → frontend.
+We left out login, real-time updates, and advanced analytics to deliver
+a working app with meaningful charts. See [MVP Scope](#mvp-scope) for
+in/out of scope.
+
+**Decisions (details in later sections).**
+
+-   **Staged pipeline:** Ingest → normalize → daily deltas → quality
+    checks → PV allocation. One job per stage; see [Backend Processing
+    with Database](#backend-processing-with-database).
+-   **PostgreSQL for persistence:** Raw and derived data stored so we
+    can re-run, compare, and inspect; see [Database & Persistence
+    Strategy](#database--persistence-strategy) and [Database
+    Schema](#database-schema).
+-   **Backend: Python, FastAPI, Pandas** — Excel + time-series + REST;
+    see [Technology Stack and Rationale](#technology-stack-and-rationale).
+-   **Frontend: React, TypeScript, Recharts** — modular UI and quick
+    charts; same section.
+-   **PV allocation: proportional by demand** per day; simple and
+    explainable (advanced allocation out of scope).
+-   **Trade-offs:** No auth, no real-time, basic filters; focus on
+    correct processing and useful visualizations.
 
 ------------------------------------------------------------------------
 
 ## Problem Understanding
 
-The dataset consists of **Excel sheets containing cumulative electricity
-meter readings**.
+The dataset is **Excel-based cumulative electricity meter readings**;
+consumption is derived as the **difference (delta) between consecutive
+readings** (see [Approach Summary](#approach-summary)).
 
-Key characteristics of the dataset include:
+Key characteristics:
 
 -   several **tenant electricity meters**
 -   a **building-level meter (Summenzähler)** with a **conversion factor
@@ -160,25 +183,16 @@ Key characteristics of the dataset include:
 -   a **PV production meter**
 -   **irregular timestamps**
 -   **different measurement coverage periods for tenants**
--   readings recorded as **cumulative totals rather than direct
-    consumption values**
 
-Because the readings are cumulative counters, they cannot be analyzed
-directly.
-
-To derive energy consumption, the system must compute the **difference
-(delta) between consecutive readings**.
-
-Additional challenges include:
+Additional challenges:
 
 -   timestamps that are not evenly spaced
 -   tenants starting or stopping measurements at different times
 -   ensuring that building-level consumption aligns with tenant usage
     and PV production
 
-Before meaningful insights can be generated, the dataset must be
-**cleaned, normalized, and transformed into interval consumption
-values**.
+The pipeline therefore **cleans, normalizes, and aggregates to daily
+consumption** before the dashboard can use it.
 
 ------------------------------------------------------------------------
 
@@ -340,11 +354,10 @@ imported and derived data provides important engineering benefits:
 
 ### Architectural decision
 
-The application uses **Pandas for transformation** and **PostgreSQL for
-persistence**. The processing flow is the same as in [System Architecture](#system-architecture) above: Excel → Pandas ingestion → raw and derived tables in PostgreSQL → FastAPI → React.
-
-This keeps the analytics pipeline explicit and inspectable while still
-leveraging Python for time-series logic.
+**Pandas** does the transformations; **PostgreSQL** stores raw and
+derived data. Flow as in [System Architecture](#system-architecture):
+Excel → Pandas → PostgreSQL → FastAPI → React. The pipeline stays
+explicit and inspectable.
 
 ------------------------------------------------------------------------
 
@@ -468,27 +481,8 @@ This keeps runtime API logic simple and improves reliability.
 
 ## Suggested SQLAlchemy Models and Migration Strategy
 
-The backend should include SQLAlchemy ORM models for: `ImportBatch`,
-`RawMeterReading`, `NormalizedMeterReading`, `DailyMeterConsumption`,
-`DailyEnergySharing`, `DataQualityIssue`.
-
-Recommended structure:
-
-```text
-backend/
-  app/
-    db/
-      base.py
-      session.py
-    models/
-      import_batch.py
-      raw_meter_reading.py
-      normalized_meter_reading.py
-      daily_meter_consumption.py
-      daily_energy_sharing.py
-      data_quality_issue.py
-```
-
+The backend implements the tables described in [Database
+Schema](#database-schema) as SQLAlchemy ORM models under `app/models/`.
 Use **Alembic** for schema versioning:
 
 ```bash
@@ -502,10 +496,9 @@ Schema evolution stays explicit and versioned.
 
 ## API Design Impact
 
-Because the transformed data is persisted, API endpoints primarily query
-derived tables rather than recomputing analytics on each request.
-
-Examples:
+Endpoints query the persisted derived tables (see [Backend Processing
+with Database](#backend-processing-with-database), Stage 6) instead of
+recomputing on each request. Examples:
 
 -   `/api/summary` → aggregate from `daily_meter_consumption` and `daily_energy_sharing`
 -   `/api/timeseries/building` → query daily building and PV records
@@ -513,30 +506,16 @@ Examples:
 -   `/api/sharing` → query `daily_energy_sharing`
 -   `/api/quality` → query `data_quality_issues`
 
-This approach improves clarity and keeps the API layer lightweight.
-
 ------------------------------------------------------------------------
 
 ## Data Processing Strategy
 
-The dataset contains **cumulative energy readings**, which means
-consumption must be derived indirectly.
-
-Key processing steps include:
-
-1.  Loading Excel sheets into Pandas DataFrames
-2.  Sorting readings by timestamp
-3.  Computing **delta values between consecutive readings**
-4.  Applying the **conversion factor for the building-level meter**
-5.  Aggregating results into daily consumption metrics
-
-Handling irregular timestamps:
-
--   timestamps are normalized to daily granularity
--   intervals are preserved rather than interpolated
-
-This approach provides **reliable consumption estimates while avoiding
-assumptions about missing data**.
+The concrete pipeline is described in [Backend Processing with
+Database](#backend-processing-with-database). In short: load Excel, sort
+by meter and timestamp, compute deltas from cumulative values, apply the
+**building-level conversion factor**, aggregate to daily consumption.
+Irregular timestamps are normalized to daily granularity without
+interpolation, so we avoid assumptions about missing data.
 
 ------------------------------------------------------------------------
 
@@ -575,42 +554,39 @@ These metrics help reveal:
 
 # Assumptions
 
-Several assumptions were made to simplify the implementation:
+Key assumptions for this MVP:
 
--   energy consumption is derived from the difference between cumulative
-    readings
--   readings represent consumption between consecutive timestamps
--   aggregation is performed at **daily granularity**
--   PV self-consumption is estimated using **overlap between PV
-    production and building demand**
--   the building-level meter conversion factor is applied consistently
--   imported datasets are versioned through `import_batches`
--   raw imported rows are preserved before transformation
--   processed analytics are persisted and served from PostgreSQL
--   Pandas is used for time-series transformations, while PostgreSQL is used for storage and queryable outputs
--   API endpoints read from persisted derived tables rather than recalculating all analytics per request
+-   consumption is derived from **deltas between consecutive cumulative
+    readings**; aggregation is at **daily granularity**
+-   PV self-consumption is estimated from **overlap between PV
+    production and building demand**; building-level conversion factor
+    is applied consistently
+-   imports are versioned via `import_batches`; raw rows are preserved,
+    then transformed and persisted in PostgreSQL; the API reads from
+    these persisted tables (no per-request recomputation)
 
-These assumptions allow meaningful insights while keeping the
-implementation manageable.
+These keep the implementation manageable while still giving meaningful
+insights.
 
 ------------------------------------------------------------------------
 
 # Limitations
 
-Due to the limited development time and dataset complexity, several
-limitations exist:
+See [MVP Scope](#mvp-scope) (Out of Scope) for features not
+implemented. Additional limitations:
 
--   irregular timestamps are not interpolated
--   PV allocation across tenants is simplified
--   minimal anomaly detection
--   limited dashboard filtering capabilities
--   the current schema is optimized for a single-building MVP, not yet for a multi-building production platform
--   import workflow assumes a known Excel structure
--   analytics are precomputed during import rather than incrementally updated
--   the database design is relational and suitable for MVP scale, but a specialized time-series architecture may be preferable for production-scale smart-meter ingestion
+-   irregular timestamps are not interpolated; PV allocation is
+    simplified; anomaly detection is minimal; dashboard filtering is
+    basic
+-   schema and import workflow assume a **single-building MVP** and a
+    known Excel structure; analytics are precomputed at import, not
+    incrementally updated
+-   relational storage is used for MVP scale; production-scale
+    smart-meter ingestion might benefit from a time-series–optimized
+    store
 
-The MVP focuses on demonstrating **core data transformation and
-visualization capabilities** rather than a complete production system.
+The MVP demonstrates **core data transformation and visualization**
+rather than a full production system.
 
 ------------------------------------------------------------------------
 
