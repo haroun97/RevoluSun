@@ -100,26 +100,31 @@ export default function DashboardPage() {
   const summaryQuery = useQuery({
     queryKey: ["summary", dateRange?.start ?? "", dateRange?.end ?? ""],
     queryFn: () => fetchSummary(dateRange?.start, dateRange?.end),
+    enabled: !!dateRange,
     staleTime: 60_000,
   });
   const timeseriesQuery = useQuery({
     queryKey: ["timeseries", "building", granularity, dateRange?.start ?? "", dateRange?.end ?? ""],
     queryFn: () => fetchBuildingTimeseries(granularity, dateRange?.start, dateRange?.end),
+    enabled: !!dateRange,
     staleTime: 60_000,
   });
   const tenantsQuery = useQuery({
     queryKey: ["tenants", dateRange?.start ?? "", dateRange?.end ?? ""],
     queryFn: () => fetchTenants(dateRange?.start, dateRange?.end),
+    enabled: !!dateRange,
     staleTime: 60_000,
   });
   const sharingQuery = useQuery({
     queryKey: ["sharing", dateRange?.start ?? "", dateRange?.end ?? ""],
     queryFn: () => fetchSharing(dateRange?.start, dateRange?.end),
+    enabled: !!dateRange,
     staleTime: 60_000,
   });
   const qualityQuery = useQuery({
     queryKey: ["quality"],
     queryFn: () => fetchQuality(),
+    enabled: !!dateRange,
     staleTime: 60_000,
   });
 
@@ -151,8 +156,9 @@ export default function DashboardPage() {
   const mismatchCount =
     qualityBreakdown?.mismatchCount != null ? qualityBreakdown.mismatchCount : 0;
 
+  const isBootstrapping = dateRangeQuery.isLoading || !dateRange;
   const isLoading =
-    dateRangeQuery.isLoading ||
+    isBootstrapping ||
     summaryQuery.isLoading ||
     timeseriesQuery.isLoading ||
     tenantsQuery.isLoading ||
@@ -219,89 +225,108 @@ export default function DashboardPage() {
     },
   ];
 
+  let content: JSX.Element;
+
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <Navbar />
+    content = (
+      <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-10 h-10 animate-spin text-primary" />
         <p className="text-muted-foreground">Loading dashboard…</p>
       </div>
     );
-  }
-
-  if (isError) {
-    return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-4">
-        <Navbar />
-        <p className="text-destructive font-medium">Failed to load dashboard data. Is the backend running?</p>
-        <p className="text-muted-foreground text-sm">Ensure the API is available at the configured VITE_API_URL (default: http://localhost:8000).</p>
-        <Footer />
+  } else if (isError) {
+    content = (
+      <div className="flex flex-col items-center justify-center gap-4 p-4 py-24">
+        <p className="text-destructive font-medium">
+          Failed to load dashboard data. Is the backend running?
+        </p>
+        <p className="text-muted-foreground text-sm">
+          Ensure the API is available at the configured VITE_API_URL (default: http://localhost:8000).
+        </p>
       </div>
+    );
+  } else {
+    content = (
+      <>
+        <HeroSummary kpi={kpi} />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+          <section id="overview" className="scroll-mt-20">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+              {kpiCards.map((card, idx) => (
+                <KpiCard key={card.title} {...card} index={idx} />
+              ))}
+            </div>
+          </section>
+
+          <FilterBar
+            dateRange={dateRange}
+            defaultDateRange={defaultDateRange}
+            fullDateRange={fullDateRange}
+            onDateRangeChange={setDateRange}
+            granularity={granularity}
+            onGranularityChange={setGranularity}
+            onReset={() => setDateRange(defaultDateRange)}
+            trailingAction={<GoogleDriveImportButton />}
+          />
+
+          <section>
+            <SectionHeader
+              id="core-charts"
+              title="Energy Overview"
+              subtitle="Building electricity demand and photovoltaic generation over the analysis period."
+            />
+            <div className="grid lg:grid-cols-2 gap-6">
+              <BuildingVsPvChart data={timeSeries} />
+              <PvUsageChart data={timeSeries} />
+            </div>
+          </section>
+
+          <section>
+            <SectionHeader
+              id="tenants"
+              title="Tenant Analysis"
+              subtitle="Individual tenant consumption patterns, comparisons, and key insights."
+            />
+            <TenantInsights tenants={tenants} />
+            <div className="grid lg:grid-cols-2 gap-6 mt-6">
+              <TenantComparisonChart tenants={tenants} />
+              <TenantTrendChart tenants={tenants} />
+            </div>
+          </section>
+
+          <section>
+            <SectionHeader
+              id="energy-sharing"
+              title="Fair Energy Sharing Simulation"
+              subtitle="PV generation is allocated proportionally to tenant demand for each period."
+            />
+            <EnergySharingChart allocations={allocations} />
+          </section>
+
+          <section>
+            <SectionHeader
+              id="data-quality"
+              title="Data Quality & Coverage"
+              subtitle="Transparency metrics for metering data completeness and consistency."
+            />
+            <DataQualityView
+              entries={dataQualityEntries}
+              alerts={dataQualityAlerts}
+              breakdown={qualityBreakdown}
+              missingTenants={dataQualityMissingTenants}
+            />
+          </section>
+        </div>
+      </>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <HeroSummary kpi={kpi} />
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
-        <section id="overview" className="scroll-mt-20">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-            {kpiCards.map((card, idx) => (
-              <KpiCard key={card.title} {...card} index={idx} />
-            ))}
-          </div>
-        </section>
-
-        <FilterBar
-          dateRange={dateRange}
-          defaultDateRange={defaultDateRange}
-          fullDateRange={fullDateRange}
-          onDateRangeChange={setDateRange}
-          granularity={granularity}
-          onGranularityChange={setGranularity}
-          onReset={() => setDateRange(defaultDateRange)}
-        />
-
-        <section className="flex flex-wrap items-center gap-4">
-          <GoogleDriveImportButton />
-        </section>
-
-        <section>
-          <SectionHeader id="core-charts" title="Energy Overview" subtitle="Building electricity demand and photovoltaic generation over the analysis period." />
-          <div className="grid lg:grid-cols-2 gap-6">
-            <BuildingVsPvChart data={timeSeries} />
-            <PvUsageChart data={timeSeries} />
-          </div>
-        </section>
-
-        <section>
-          <SectionHeader id="tenants" title="Tenant Analysis" subtitle="Individual tenant consumption patterns, comparisons, and key insights." />
-          <TenantInsights tenants={tenants} />
-          <div className="grid lg:grid-cols-2 gap-6 mt-6">
-            <TenantComparisonChart tenants={tenants} />
-            <TenantTrendChart tenants={tenants} />
-          </div>
-        </section>
-
-        <section>
-          <SectionHeader id="energy-sharing" title="Fair Energy Sharing Simulation" subtitle="PV generation is allocated proportionally to tenant demand for each period." />
-          <EnergySharingChart allocations={allocations} />
-        </section>
-
-        <section>
-          <SectionHeader id="data-quality" title="Data Quality & Coverage" subtitle="Transparency metrics for metering data completeness and consistency." />
-          <DataQualityView
-            entries={dataQualityEntries}
-            alerts={dataQualityAlerts}
-            breakdown={qualityBreakdown}
-            missingTenants={dataQualityMissingTenants}
-          />
-        </section>
-      </div>
-
-      <Footer />
+      <main className="pt-16">{content}</main>
+      {!isLoading && !isError && <Footer />}
     </div>
   );
 }

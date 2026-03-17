@@ -20,8 +20,17 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    const onScroll = () => {
+      const next = window.scrollY > 20;
+      setScrolled((prev) => {
+        return next;
+      });
+    };
+
     window.addEventListener('scroll', onScroll);
+    // capture initial scroll position as well
+    onScroll();
+
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
@@ -30,7 +39,7 @@ export function Navbar() {
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 ${
         scrolled ? 'glass-nav shadow-sm' : 'bg-transparent'
       }`}
     >

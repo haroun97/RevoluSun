@@ -22,6 +22,8 @@ interface FilterBarProps {
   granularity: Granularity;
   onGranularityChange: (g: Granularity) => void;
   onReset: () => void;
+  /** Optional extra control rendered next to the Reset button (e.g. import button). */
+  trailingAction?: React.ReactNode;
 }
 
 const granularities: { value: Granularity; label: string }[] = [
@@ -45,6 +47,7 @@ export function FilterBar({
   granularity,
   onGranularityChange,
   onReset,
+  trailingAction,
 }: FilterBarProps) {
   const rangeLabel = dateRange ? formatRange(dateRange) : 'Loading…';
 
@@ -135,7 +138,8 @@ export function FilterBar({
         ))}
       </div>
 
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        {trailingAction}
         <Button
           type="button"
           variant="ghost"
