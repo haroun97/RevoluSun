@@ -138,7 +138,7 @@ export function FilterBar({
         ))}
       </div>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-2">
         {trailingAction}
         <Button
           type="button"

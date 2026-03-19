@@ -1,28 +1,28 @@
 /**
  * Button to import a spreadsheet from Google Drive: OAuth, picker, then POST to backend.
- * Requires VITE_GOOGLE_CLIENT_ID. After a successful import we invalidate all dashboard queries.
+ * Requires VITE_GOOGLE_CLIENT_ID. Success/error feedback uses Sonner toasts so the filter bar stays compact.
  */
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CloudDownload, Loader2 } from "lucide-react";
 import { importGoogleDriveFile } from "@/api/energyApi";
+import { toast } from "@/components/ui/sonner";
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.readonly";
 
+type ImportStatus = "idle" | "loading" | "picking" | "importing";
+
 export function GoogleDriveImportButton() {
-  const [status, setStatus] = useState<"idle" | "loading" | "picking" | "importing" | "success" | "error">("idle");
-  const [message, setMessage] = useState<string>("");
+  const [status, setStatus] = useState<ImportStatus>("idle");
   const queryClient = useQueryClient();
   const clientId = typeof import.meta !== "undefined" && import.meta.env?.VITE_GOOGLE_CLIENT_ID;
 
   /** Call the backend to import the file, then refresh all dashboard data. */
   const runImport = async (accessToken: string, fileId: string) => {
     setStatus("importing");
-    setMessage("Importing…");
     try {
       const result = await importGoogleDriveFile(accessToken, fileId);
-      setMessage(result.message);
-      setStatus("success");
+      toast.success("Import complete", { description: result.message });
       await queryClient.invalidateQueries({ queryKey: ["dateRange"] });
       await queryClient.invalidateQueries({ queryKey: ["summary"] });
       await queryClient.invalidateQueries({ queryKey: ["timeseries"] });
@@ -30,22 +30,23 @@ export function GoogleDriveImportButton() {
       await queryClient.invalidateQueries({ queryKey: ["sharing"] });
       await queryClient.invalidateQueries({ queryKey: ["quality"] });
     } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Import failed");
-      setStatus("error");
+      toast.error(e instanceof Error ? e.message : "Import failed");
+    } finally {
+      setStatus("idle");
     }
   };
 
   const openPicker = (accessToken: string) => {
     if (!window.gapi) {
-      setMessage("Google Picker not loaded. Refresh the page.");
-      setStatus("error");
+      toast.error("Google Picker not loaded. Refresh the page.");
+      setStatus("idle");
       return;
     }
     window.gapi.load("picker", () => {
       const google = window.google;
       if (!google?.picker) {
-        setMessage("Google Picker not available.");
-        setStatus("error");
+        toast.error("Google Picker not available.");
+        setStatus("idle");
         return;
       }
       const picker = new google.picker.PickerBuilder()
@@ -53,7 +54,7 @@ export function GoogleDriveImportButton() {
         .addView(new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS))
         .setCallback((data: { action: string; docs: { id: string }[] }) => {
           if (data.action === "picked" && data.docs?.[0]) {
-            runImport(accessToken, data.docs[0].id);
+            void runImport(accessToken, data.docs[0].id);
           } else {
             setStatus("idle");
           }
@@ -67,18 +68,15 @@ export function GoogleDriveImportButton() {
   /** Start the flow: request OAuth token, then show picker and run import. */
   const handleClick = () => {
     if (!clientId?.trim()) {
-      setMessage("VITE_GOOGLE_CLIENT_ID is not set.");
-      setStatus("error");
+      toast.error("VITE_GOOGLE_CLIENT_ID is not set.");
       return;
     }
     const google = window.google;
     if (!google?.accounts?.oauth2) {
-      setMessage("Google Sign-In not loaded. Refresh the page.");
-      setStatus("error");
+      toast.error("Google Sign-In not loaded. Refresh the page.");
       return;
     }
     setStatus("loading");
-    setMessage("Requesting access…");
     const tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: DRIVE_SCOPE,
@@ -86,8 +84,8 @@ export function GoogleDriveImportButton() {
         if (response.access_token) {
           openPicker(response.access_token);
         } else {
-          setMessage("Could not get access token.");
-          setStatus("error");
+          toast.error("Could not get access token.");
+          setStatus("idle");
         }
       },
     });
@@ -96,28 +94,26 @@ export function GoogleDriveImportButton() {
 
   const isBusy = status === "loading" || status === "picking" || status === "importing";
 
+  const label =
+    status === "importing"
+      ? "Importing…"
+      : status === "picking"
+        ? "Pick file…"
+        : status === "loading"
+          ? "Connecting…"
+          : "Import";
+
   return (
-    <div className="flex flex-col gap-2">
-      <button
-        type="button"
-        onClick={handleClick}
-        disabled={isBusy}
-        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition hover:bg-primary/90 disabled:opacity-60"
-      >
-        {isBusy ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <CloudDownload className="h-4 w-4" />
-        )}
-        {status === "importing" ? "Importing…" : status === "picking" ? "Pick a file…" : "Import from Google Drive"}
-      </button>
-      {message && (
-        <p
-          className={`text-sm ${status === "error" ? "text-destructive" : status === "success" ? "text-green-600" : "text-muted-foreground"}`}
-        >
-          {message}
-        </p>
-      )}
-    </div>
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isBusy}
+      title="Import from Google Drive"
+      aria-label="Import from Google Drive"
+      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-2.5 text-xs font-medium text-primary shadow-sm transition hover:bg-primary/15 disabled:opacity-60"
+    >
+      {isBusy ? <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" /> : <CloudDownload className="h-3.5 w-3.5 shrink-0" />}
+      <span className="max-w-[7rem] truncate sm:max-w-none">{label}</span>
+    </button>
   );
 }
